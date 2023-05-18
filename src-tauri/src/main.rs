@@ -1,18 +1,20 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::sync::{Arc, Mutex};
+use futures::lock::Mutex;
+use std::sync::Arc;
 
 mod api;
 
 #[derive(Default)]
 pub struct HauntState {
     lockfile_config: Arc<Mutex<Option<api::lockfile::Config>>>,
+    session_config: Arc<Mutex<Option<api::local::sessions::Config>>>,
 }
 
 fn main() {
     env_logger::builder()
-        .filter_level(log::LevelFilter::Info)
+        .filter(Some("haunt"), log::LevelFilter::Info)
         .init();
 
     tauri::Builder::default()
