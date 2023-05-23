@@ -1,3 +1,5 @@
+use color_eyre::eyre::Result;
+
 // the names returned by the api are confusing to say the least lol
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
@@ -7,7 +9,7 @@ pub struct Config {
     pub jwt: String,
 }
 
-pub async fn login(state: &tauri::State<'_, crate::HauntState>) -> Result<Config, reqwest::Error> {
+pub async fn login(state: &tauri::State<'_, crate::HauntState>) -> Result<Config> {
     let state_handle = state.0.lock().await;
     let lockfile_config = state_handle.lockfile_config.as_ref().unwrap();
 

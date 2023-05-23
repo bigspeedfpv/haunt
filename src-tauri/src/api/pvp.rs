@@ -1,5 +1,12 @@
-pub async fn check_match(state: &tauri::State<'_, crate::HauntState>) -> bool {
-    let state_handle = state.0.lock().await;
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct CurrentGameResponse {
+    #[serde(rename = "MatchID")]
+    match_id: String,
+}
+
+pub async fn find_match_id(state: &tauri::State<'_, crate::HauntState>) -> Option<String> {
+    let mut state_handle = state.0.lock().await;
     // this function is called after both lockfile and session have succeeded
     let entitlements_config = state_handle.entitlements_config.as_ref().unwrap();
     let session_config = state_handle.session_config.as_ref().unwrap();
@@ -27,7 +34,10 @@ pub async fn check_match(state: &tauri::State<'_, crate::HauntState>) -> bool {
     match res {
         Ok(res) if res.status().is_success() => {
             log::info!("Found player in game.");
-            return true;
+            let match_id = Some(res.json::<CurrentGameResponse>().await.unwrap().match_id);
+
+            state_handle.match_id = match_id.clone();
+            return match_id;
         }
         _ => (),
     }
@@ -53,11 +63,16 @@ pub async fn check_match(state: &tauri::State<'_, crate::HauntState>) -> bool {
     match res {
         Ok(res) if res.status().is_success() => {
             log::info!("Player found in pregame lobby.");
-            true
+            let match_id = Some(res.json::<CurrentGameResponse>().await.unwrap().match_id);
+
+            state_handle.match_id = match_id.clone();
+            return match_id;
         }
         _ => {
             log::info!("Player not found in a match.");
-            false
+
+            state_handle.match_id = None;
+            None
         }
     }
 }

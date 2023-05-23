@@ -2,7 +2,7 @@ pub mod local;
 pub mod lockfile;
 pub mod pvp;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
 pub enum LoginFail {
     Lockfile,
     Session,
@@ -88,8 +88,7 @@ pub async fn check_user_data(state: tauri::State<'_, crate::HauntState>) -> Resu
 
     log::info!("Checking if player is in a match...");
 
-    let in_game = pvp::check_match(&state).await;
-    log::info!("{in_game}");
+    pvp::find_match_id(&state).await;
 
     return Ok(());
 }

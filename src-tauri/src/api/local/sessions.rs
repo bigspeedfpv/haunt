@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use color_eyre::eyre::Result;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -125,7 +126,7 @@ impl From<Vec<String>> for Config {
 
 pub async fn load_config(
     state: &tauri::State<'_, crate::HauntState>,
-) -> Result<Config, reqwest::Error> {
+) -> Result<Config> {
     let state_handle = state.0.lock().await;
     // this should only be called after the lockfile has been loaded so we can unwrap here
     let lockfile_config = state_handle.lockfile_config.as_ref().unwrap();

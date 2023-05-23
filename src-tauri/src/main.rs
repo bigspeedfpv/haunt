@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use color_eyre::eyre::Result;
 use futures::lock::Mutex;
 use std::sync::Arc;
 
@@ -10,6 +11,8 @@ mod api;
 struct InnerState {
     http: reqwest::Client,
 
+    match_id: Option<String>,
+
     lockfile_config: Option<api::lockfile::Config>,
     entitlements_config: Option<api::local::entitlements::Config>,
     session_config: Option<api::local::sessions::Config>,
@@ -17,7 +20,9 @@ struct InnerState {
 
 pub struct HauntState(Arc<Mutex<InnerState>>);
 
-fn main() {
+fn main() -> Result<()> {
+    color_eyre::install()?;
+
     env_logger::builder()
         .filter(Some("haunt"), log::LevelFilter::Debug)
         .init();
@@ -34,4 +39,6 @@ fn main() {
         .invoke_handler(tauri::generate_handler![api::check_user_data])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+
+    Ok(())
 }
