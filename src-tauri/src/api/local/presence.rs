@@ -6,6 +6,8 @@ use color_eyre::eyre::Result;
 use heck::ToTitleCase;
 use serde::{Deserialize, Serialize};
 
+use crate::api::lockfile;
+
 const DM_UUID: &'static str = "a8790ec5-4237-f2f0-e93b-08a8e89865b2";
 const SPIKE_RUSH_UUID: &'static str = "e921d1e6-416b-c31f-1291-74930c330b7b";
 const GGTEAM_UUID: &'static str = "a4ed6518-4741-6dcb-35bd-f884aecdc859";
@@ -74,19 +76,15 @@ impl From<Presence> for Player {
     }
 }
 
-pub async fn get_match_players(state: &tauri::State<'_, crate::HauntState>) -> Result<Vec<Player>> {
-    let state_handle = state.0.lock().await;
-    let lockfile_config = state_handle.lockfile_config.clone().unwrap();
-
+pub async fn get_match_players(lockfile: &lockfile::Config, http: &reqwest::Client) -> Result<Vec<Player>> {
     let presences_endpoint = format!(
         "https://127.0.0.1:{}/chat/v4/presences",
-        lockfile_config.port
+        &lockfile.port
     );
 
-    let presences = state_handle
-        .offline_http
+    let presences = http
         .get(presences_endpoint)
-        .basic_auth("riot", Some(lockfile_config.password.clone()))
+        .basic_auth("riot", Some(&lockfile.password))
         .send()
         .await?
         .json::<PresenceResponse>()

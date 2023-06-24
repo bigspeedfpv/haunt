@@ -7,6 +7,7 @@ const name = ref("");
 
 async function greet() {
   greetMsg.value = await invoke("login");
+  await invoke("load_match");
 }
 </script>
 

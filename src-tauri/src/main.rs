@@ -6,17 +6,19 @@ use futures::lock::Mutex;
 use std::sync::Arc;
 
 mod api;
+use api::commands;
 
 #[derive(Default)]
 struct InnerState {
     http: reqwest::Client,
     offline_http: reqwest::Client, // used for local cnx with tls disabled
 
-    lockfile_config: Option<api::lockfile::Config>,
-    entitlements_config: Option<api::local::entitlements::Config>,
+    lockfile_config: Mutex<Option<api::lockfile::Config>>,
+    entitlements_config: Mutex<Option<api::local::entitlements::Config>>,
 }
 
-pub struct HauntState(Arc<Mutex<InnerState>>);
+// so we don't have to manually wrap each field in an Arc<T>
+pub struct HauntState(Arc<InnerState>);
 
 fn main() -> Result<()> {
     color_eyre::install()?;
@@ -35,12 +37,15 @@ fn main() -> Result<()> {
         .expect("failed to build reqwest client");
 
     tauri::Builder::default()
-        .manage(HauntState(Arc::new(Mutex::new(InnerState {
+        .manage(HauntState(Arc::new(InnerState {
             http,
             offline_http,
             ..Default::default()
-        }))))
-        .invoke_handler(tauri::generate_handler![api::commands::login])
+        })))
+        .invoke_handler(tauri::generate_handler![
+            commands::login,
+            commands::load_match
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 

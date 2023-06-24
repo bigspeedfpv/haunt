@@ -1,4 +1,4 @@
-use super::local::sessions;
+use super::local::{entitlements, sessions};
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -7,11 +7,11 @@ struct CurrentGameResponse {
     match_id: String,
 }
 
-pub async fn find_match_id(state: &tauri::State<'_, crate::HauntState>, session: sessions::Config) -> Option<String> {
-    let mut state_handle = state.0.lock().await;
-    // this function is called after both lockfile and session have succeeded
-    let entitlements_config = state_handle.entitlements_config.as_ref().unwrap();
-
+pub async fn find_match_id(
+    entitlements: &entitlements::Config,
+    http: &reqwest::Client,
+    session: &sessions::Config,
+) -> Option<String> {
     log::debug!("Checking ingame api for player...");
 
     let ingame_endpoint = format!(
@@ -21,11 +21,10 @@ pub async fn find_match_id(state: &tauri::State<'_, crate::HauntState>, session:
         &session.puuid
     );
 
-    let res = state_handle
-        .http
+    let res = http
         .get(&ingame_endpoint)
-        .bearer_auth(&entitlements_config.token)
-        .header("X-Riot-Entitlements-JWT", &entitlements_config.jwt)
+        .bearer_auth(&entitlements.token)
+        .header("X-Riot-Entitlements-JWT", &entitlements.jwt)
         .send()
         .await;
 
@@ -51,11 +50,10 @@ pub async fn find_match_id(state: &tauri::State<'_, crate::HauntState>, session:
         &session.puuid
     );
 
-    let res = state_handle
-        .http
+    let res = http
         .get(&pregame_endpoint)
-        .bearer_auth(&entitlements_config.token)
-        .header("X-Riot-Entitlements-JWT", &entitlements_config.jwt)
+        .bearer_auth(&entitlements.token)
+        .header("X-Riot-Entitlements-JWT", &entitlements.jwt)
         .send()
         .await;
 
@@ -72,5 +70,3 @@ pub async fn find_match_id(state: &tauri::State<'_, crate::HauntState>, session:
         }
     }
 }
-
-

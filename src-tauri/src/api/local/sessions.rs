@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use color_eyre::eyre::Result;
 use serde::Deserialize;
 
+use crate::api::lockfile;
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SessionsResponse {
@@ -128,18 +130,13 @@ impl From<&SessionsResponse> for Config {
     }
 }
 
-pub async fn load_config(state: &tauri::State<'_, crate::HauntState>) -> Result<Config> {
-    let state_handle = state.0.lock().await;
-    // this should only be called after the lockfile has been loaded so we can unwrap here
-    let lockfile_config = state_handle.lockfile_config.as_ref().unwrap();
-
-    let sessions_response = state_handle
-        .offline_http
+pub async fn load_config(lockfile: &lockfile::Config, http: &reqwest::Client) -> Result<Config> {
+    let sessions_response = http
         .get(format!(
             "https://127.0.0.1:{}/product-session/v1/external-sessions",
-            lockfile_config.port
+            lockfile.port
         ))
-        .basic_auth("riot", Some(&lockfile_config.password)) // this b64 encodes for us omg!
+        .basic_auth("riot", Some(&lockfile.password)) // this b64 encodes for us omg!
         .send()
         .await?
         .json::<HashMap<String, SessionsResponse>>()

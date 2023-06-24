@@ -33,10 +33,8 @@ pub struct Border {
 pub async fn get_prev_3_seasons(
     state: &tauri::State<'_, crate::HauntState>,
 ) -> Result<Vec<Season>> {
-    let state_handle = state.0.lock().await;
-    let entitlements_config = state_handle.entitlements_config.as_ref().unwrap();
-
-    let seasons = state_handle
+    let seasons = state
+        .0
         .http
         .get("https://valorant-api.com/v1/seasons/competitive")
         .send()

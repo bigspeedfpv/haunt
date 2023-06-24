@@ -1,5 +1,7 @@
 use color_eyre::eyre::Result;
 
+use crate::api::lockfile;
+
 // the names returned by the api are confusing to say the least lol
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
@@ -9,19 +11,15 @@ pub struct Config {
     pub jwt: String,
 }
 
-pub async fn login(state: &tauri::State<'_, crate::HauntState>) -> Result<Config> {
-    let state_handle = state.0.lock().await;
-    let lockfile_config = state_handle.lockfile_config.as_ref().unwrap();
-
+pub async fn login(lockfile: &lockfile::Config, http: &reqwest::Client) -> Result<Config> {
     let entitlements_endpoint = format!(
         "https://127.0.0.1:{}/entitlements/v1/token",
-        lockfile_config.port
+        lockfile.port
     );
 
-    let res = state_handle
-        .offline_http
+    let res = http
         .get(&entitlements_endpoint)
-        .basic_auth("riot", Some(&lockfile_config.password))
+        .basic_auth("riot", Some(&lockfile.password))
         .send()
         .await?
         .json::<Config>()
