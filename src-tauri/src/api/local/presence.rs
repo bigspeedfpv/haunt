@@ -76,11 +76,11 @@ impl From<Presence> for Player {
     }
 }
 
-pub async fn get_match_players(lockfile: &lockfile::Config, http: &reqwest::Client) -> Result<Vec<Player>> {
-    let presences_endpoint = format!(
-        "https://127.0.0.1:{}/chat/v4/presences",
-        &lockfile.port
-    );
+pub async fn get_match_players(
+    lockfile: &lockfile::Config,
+    http: &reqwest::Client,
+) -> Result<Vec<Player>> {
+    let presences_endpoint = format!("https://127.0.0.1:{}/chat/v4/presences", &lockfile.port);
 
     let presences = http
         .get(presences_endpoint)

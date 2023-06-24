@@ -20,4 +20,3 @@ pub fn debug_parties(players: Vec<Player>) {
         });
     });
 }
-

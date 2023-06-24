@@ -12,10 +12,8 @@ pub struct Config {
 }
 
 pub async fn login(lockfile: &lockfile::Config, http: &reqwest::Client) -> Result<Config> {
-    let entitlements_endpoint = format!(
-        "https://127.0.0.1:{}/entitlements/v1/token",
-        lockfile.port
-    );
+    let entitlements_endpoint =
+        format!("https://127.0.0.1:{}/entitlements/v1/token", lockfile.port);
 
     let res = http
         .get(&entitlements_endpoint)
