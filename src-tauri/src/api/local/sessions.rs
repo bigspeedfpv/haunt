@@ -8,6 +8,7 @@ use serde::Deserialize;
 struct SessionsResponse {
     launch_configuration: LaunchConfiguration,
     product_id: Product,
+    version: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -28,6 +29,7 @@ pub struct Config {
     pub puuid: String,
     pub region: Region,
     pub shard: Shard,
+    pub version: String,
 }
 
 #[derive(Clone, Debug)]
@@ -110,34 +112,29 @@ fn get_arg(arguments: &Vec<String>, prefix: &str) -> String {
         .to_string()
 }
 
-impl From<Vec<String>> for Config {
-    fn from(arguments: Vec<String>) -> Self {
-        let deployment = get_arg(&arguments, "-ares-deployment=");
+impl From<&SessionsResponse> for Config {
+    fn from(config: &SessionsResponse) -> Self {
+        let arguments = config.launch_configuration.arguments.clone();
 
+        let deployment = get_arg(&arguments, "-ares-deployment=");
         let puuid = get_arg(&arguments, "-subject=");
 
         return Self {
             puuid: puuid.to_string(),
             shard: Shard::from(&deployment),
             region: Region::from(&deployment),
+            version: config.version.clone(),
         };
     }
 }
 
-pub async fn load_config(
-    state: &tauri::State<'_, crate::HauntState>,
-) -> Result<Config> {
+pub async fn load_config(state: &tauri::State<'_, crate::HauntState>) -> Result<Config> {
     let state_handle = state.0.lock().await;
     // this should only be called after the lockfile has been loaded so we can unwrap here
     let lockfile_config = state_handle.lockfile_config.as_ref().unwrap();
 
-    // we create an insecure http instance just for this one request
-    let http = reqwest::Client::builder()
-        .danger_accept_invalid_certs(true)
-        .build()
-        .unwrap();
-
-    let sessions_response = http
+    let sessions_response = state_handle
+        .offline_http
         .get(format!(
             "https://127.0.0.1:{}/product-session/v1/external-sessions",
             lockfile_config.port
@@ -153,9 +150,7 @@ pub async fn load_config(
     let valorant_config = sessions_response
         .values()
         .find(|s| matches!(s.product_id, Product::Valorant))
-        .unwrap()
-        .launch_configuration
-        .clone();
+        .unwrap();
 
-    return Ok(Config::from(valorant_config.arguments));
+    return Ok(Config::from(valorant_config));
 }

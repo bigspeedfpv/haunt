@@ -6,7 +6,7 @@ const greetMsg = ref(false);
 const name = ref("");
 
 async function greet() {
-  greetMsg.value = await invoke("check_user_data");
+  greetMsg.value = await invoke("login");
 }
 </script>
 

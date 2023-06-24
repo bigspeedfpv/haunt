@@ -10,12 +10,10 @@ mod api;
 #[derive(Default)]
 struct InnerState {
     http: reqwest::Client,
-
-    match_id: Option<String>,
+    offline_http: reqwest::Client, // used for local cnx with tls disabled
 
     lockfile_config: Option<api::lockfile::Config>,
     entitlements_config: Option<api::local::entitlements::Config>,
-    session_config: Option<api::local::sessions::Config>,
 }
 
 pub struct HauntState(Arc<Mutex<InnerState>>);
@@ -31,12 +29,18 @@ fn main() -> Result<()> {
         .build()
         .expect("failed to build reqwest client");
 
+    let offline_http = reqwest::Client::builder()
+        .danger_accept_invalid_certs(true)
+        .build()
+        .expect("failed to build reqwest client");
+
     tauri::Builder::default()
         .manage(HauntState(Arc::new(Mutex::new(InnerState {
             http,
+            offline_http,
             ..Default::default()
         }))))
-        .invoke_handler(tauri::generate_handler![api::check_user_data])
+        .invoke_handler(tauri::generate_handler![api::commands::login])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 
