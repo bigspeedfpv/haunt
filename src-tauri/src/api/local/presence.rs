@@ -76,7 +76,7 @@ impl From<Presence> for Player {
     }
 }
 
-pub async fn get_match_players(
+pub async fn get_presences(
     lockfile: &lockfile::Config,
     http: &reqwest::Client,
 ) -> Result<Vec<Player>> {
@@ -177,6 +177,6 @@ fn get_map_name(uuid: &'static str) -> String {
     String::from("")
 }
 
-pub async fn get_match_info(puuid: String, players: &Vec<Player>) -> MatchInfo {
+pub async fn get_match_info(puuid: &str, players: &Vec<Player>) -> MatchInfo {
     MatchInfo::from(players.iter().find(|p| p.puuid == puuid).unwrap())
 }

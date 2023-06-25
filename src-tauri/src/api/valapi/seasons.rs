@@ -12,8 +12,7 @@ struct SeasonsResponse {
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Season {
-    pub uuid: String,
-    season_uuid: String,
+    pub season_uuid: String,
     competitive_tiers_uuid: String,
     borders: Option<Vec<Border>>,
     asset_path: String,

@@ -10,7 +10,6 @@ use crate::api::lockfile;
 struct SessionsResponse {
     launch_configuration: LaunchConfiguration,
     product_id: Product,
-    version: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -125,13 +124,32 @@ impl From<&SessionsResponse> for Config {
             puuid: puuid.to_string(),
             shard: Shard::from(&deployment),
             region: Region::from(&deployment),
-            version: config.version.clone(),
+            version: "".to_string(),
         };
     }
 }
 
-pub async fn load_config(lockfile: &lockfile::Config, http: &reqwest::Client) -> Result<Config> {
-    let sessions_response = http
+#[derive(Deserialize)]
+struct VersionResponse {
+    data: VersionData,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct VersionData {
+    riot_client_version: String,
+}
+
+/// Loads the current Session, including the Shard, Region, and Version.
+/// * `lockfile` - Config loaded from the lockfile.
+/// * `offline_http` - HTTP client used for offline requests.
+/// * `http` - HTTPS client used for online requests.
+pub async fn load_config(
+    lockfile: &lockfile::Config,
+    offline_http: &reqwest::Client,
+    http: &reqwest::Client,
+) -> Result<Config> {
+    let sessions_response = offline_http
         .get(format!(
             "https://127.0.0.1:{}/product-session/v1/external-sessions",
             lockfile.port
@@ -142,12 +160,22 @@ pub async fn load_config(lockfile: &lockfile::Config, http: &reqwest::Client) ->
         .json::<HashMap<String, SessionsResponse>>()
         .await?;
 
+    let version = http
+        .get("https://valorant-api.com/v1/version")
+        .send()
+        .await?
+        .json::<VersionResponse>()
+        .await?;
+
     // the API may return more than one session (e.g. for league, riot client etc)
     // so we find the one with the Valorant ID
     let valorant_config = sessions_response
         .values()
         .find(|s| matches!(s.product_id, Product::Valorant))
         .unwrap();
+
+    let mut valorant_config = Config::from(valorant_config);
+    valorant_config.version = version.data.riot_client_version;
 
     return Ok(Config::from(valorant_config));
 }

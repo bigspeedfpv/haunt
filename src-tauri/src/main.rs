@@ -15,6 +15,7 @@ struct InnerState {
 
     lockfile_config: Mutex<Option<api::lockfile::Config>>,
     entitlements_config: Mutex<Option<api::local::entitlements::Config>>,
+    session_config: Mutex<Option<api::local::sessions::Config>>,
 }
 
 // so we don't have to manually wrap each field in an Arc<T>
