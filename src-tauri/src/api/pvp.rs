@@ -7,7 +7,7 @@ pub mod mmr;
 #[serde(rename_all = "PascalCase")]
 struct CurrentGameResponse {
     #[serde(rename = "MatchID")]
-    match_id: String,
+    match_id: Option<String>,
 }
 
 pub async fn find_match_id(
@@ -37,7 +37,7 @@ pub async fn find_match_id(
     match res {
         Ok(res) if res.status().is_success() => {
             log::debug!("Found player in game.");
-            let match_id = Some(res.json::<CurrentGameResponse>().await.unwrap().match_id);
+            let match_id = res.json::<CurrentGameResponse>().await.unwrap().match_id;
 
             return match_id;
         }
@@ -64,7 +64,7 @@ pub async fn find_match_id(
     match res {
         Ok(res) if res.status().is_success() => {
             log::debug!("Player found in pregame lobby.");
-            let match_id = Some(res.json::<CurrentGameResponse>().await.unwrap().match_id);
+            let match_id = res.json::<CurrentGameResponse>().await.unwrap().match_id;
             match_id
         }
         _ => {

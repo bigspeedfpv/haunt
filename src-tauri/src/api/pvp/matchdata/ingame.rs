@@ -1,4 +1,4 @@
-use color_eyre::Result;
+use color_eyre::{Result, eyre::bail};
 use serde::{Deserialize, Serialize};
 
 use crate::api::local::{entitlements, sessions};
@@ -9,7 +9,7 @@ struct MatchInfo {
     #[serde(rename = "MapID")]
     map_id: String,
     #[serde(rename = "ModeID")]
-    mode_id: String,
+    mode: String,
     players: Vec<MatchPlayer>,
 }
 
@@ -52,7 +52,7 @@ impl Into<super::MatchData> for MatchInfo {
 
         super::MatchData {
             map: self.map_id,
-            mode: self.mode_id,
+            mode: self.mode,
             players,
         }
     }
@@ -95,9 +95,12 @@ pub async fn load_match_info(
         .bearer_auth(&entitlements.token)
         .header("X-Riot-Entitlements-JWT", &entitlements.jwt)
         .send()
-        .await?
-        .json::<MatchInfo>()
         .await?;
 
+    if !info.status().is_success() {
+        bail!("Ingame match check failed with status code {}.", info.status());
+    }
+
+    let info: MatchInfo = info.json().await?;
     Ok(info.into())
 }

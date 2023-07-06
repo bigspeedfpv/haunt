@@ -1,4 +1,4 @@
-use color_eyre::Result;
+use color_eyre::{Result, eyre::bail};
 use serde::{Deserialize, Serialize};
 
 use crate::api::local::{entitlements, sessions};
@@ -6,7 +6,7 @@ use crate::api::local::{entitlements, sessions};
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 struct MatchInfo {
-    #[serde(rename = "MatchID")]
+    #[serde(rename = "MapID")]
     map_id: String,
     mode: String,
     teams: Vec<MatchTeam>,
@@ -107,7 +107,7 @@ pub async fn load_match_info(
 ) -> Result<super::MatchData> {
     // first check ingame
     let endpoint = format!(
-        "https://glz-{}-1.{}.a.pvp.net/core-game/v1/matches/{match_id}",
+        "https://glz-{}-1.{}.a.pvp.net/pregame/v1/matches/{match_id}",
         session.region.to_string(),
         session.shard.to_string()
     );
@@ -117,10 +117,13 @@ pub async fn load_match_info(
         .bearer_auth(&entitlements.token)
         .header("X-Riot-Entitlements-JWT", &entitlements.jwt)
         .send()
-        .await?
-        .json::<MatchInfo>()
         .await?;
 
+    if !info.status().is_success() {
+        bail!("Pregame match check failed with status code {}.", info.status());
+    }
+
+    let info: MatchInfo = info.json().await?;
     Ok(info.into())
 }
 

@@ -18,7 +18,7 @@ pub struct PlayerMMRResponse {
 #[derive(Debug, Deserialize)]
 pub struct QueueSkill {
     #[serde(rename = "SeasonalInfoBySeasonID")]
-    seasonal_info_by_season_id: HashMap<String, SeasonalInfo>,
+    seasonal_info_by_season_id: Option<HashMap<String, SeasonalInfo>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -57,13 +57,12 @@ pub async fn get_player_history(
 
     // remove takes ownership of the thing!
     let mut competitive = match res.queue_skills.remove("competitive") {
-        Some(competitive) => competitive.seasonal_info_by_season_id,
+        Some(competitive) => competitive.seasonal_info_by_season_id.unwrap_or(HashMap::new()),
         None => bail!("No competitive history found for player. This is probably an issue with the API lol RIP!"),
     };
 
     let mut history = History::new();
     let act_ids = acts.iter().map(|act| &act.season_uuid).collect::<Vec<_>>();
-    log::debug!("Acts: {:#?}", act_ids);
     for act in act_ids {
         if let Some(act_info) = competitive.remove(act) {
             history.push(act_info);

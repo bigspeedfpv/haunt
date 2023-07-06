@@ -194,6 +194,8 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Ma
         }
     };
 
+    log::debug!("Filling match history with acts: {:#?}", seasons);
+
     for mut player in match_data.players {
         log::info!("Filling history for player {}", player.puuid);
         let history = api::pvp::mmr::get_player_history(
