@@ -13,10 +13,10 @@ pub fn debug_parties(players: Vec<Player>) {
     }
 
     parties.keys().for_each(|p| {
-        log::debug!("Party: {}", p);
+        debug!("Party: {}", p);
         let party = parties.get(p).unwrap();
         party.iter().for_each(|p| {
-            log::debug!("  {}", p.game_name);
+            debug!("  {}", p.game_name);
         });
     });
 }

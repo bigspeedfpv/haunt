@@ -30,7 +30,7 @@ async fn update_version(data_dir: PathBuf) {
             file.write_all(version.as_bytes()).unwrap();
         }
         Err(why) => {
-            log::warn!("Unable to update version: {why}");
+            warn!("Unable to update version: {why}");
         }
     }
 }
@@ -48,7 +48,7 @@ async fn update_maps(data_dir: PathBuf) {
             file.write_all(maps.as_bytes()).unwrap();
         }
         Err(why) => {
-            log::warn!("Unable to update maps: {why}");
+            warn!("Unable to update maps: {why}");
         }
     }
 }

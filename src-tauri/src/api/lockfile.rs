@@ -39,7 +39,7 @@ pub fn load_config() -> Option<Config> {
         .join("lockfile");
 
     let lockfile = fs::read_to_string(lockfile_path);
-    log::debug!("Lockfile content: {:?}", lockfile);
+    debug!("Lockfile content: {:?}", lockfile);
     let lockfile = match lockfile {
         Ok(lockfile) => lockfile,
         Err(_) => return None,

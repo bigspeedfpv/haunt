@@ -1,6 +1,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+#[macro_use]
+extern crate tracing;
+
 use color_eyre::eyre::Result;
 use futures::lock::Mutex;
 use std::sync::Arc;
@@ -24,9 +27,9 @@ pub struct HauntState(Arc<InnerState>);
 fn main() -> Result<()> {
     color_eyre::install()?;
 
-    env_logger::builder()
-        .filter(Some("haunt"), log::LevelFilter::Debug)
-        .init();
+    let format = tracing_subscriber::fmt::format()
+        .pretty();
+    tracing_subscriber::fmt().event_format(format).init();
 
     let http = reqwest::Client::builder()
         .build()

@@ -98,7 +98,7 @@ pub async fn get_presences(
         .into_iter()
         .filter(|p| p.product == Product::Valorant && p.private.is_some())
         .map(|p| {
-            log::debug!("Found presence: {:#?}", p);
+            debug!("Found presence: {:#?}", p);
             Player::from(p)
         })
         .collect();

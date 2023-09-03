@@ -79,14 +79,14 @@ pub async fn get_match_info(
 ) -> Result<MatchData> {
     // check ingame first
     let info = ingame::load_match_info(session, entitlements, match_id, http).await;
-    log::debug!("Ingame endpoint returned: {:#?}", info);
+    debug!("Ingame endpoint returned: {:#?}", info);
     if info.is_ok() {
         return info;
     }
 
     // otherwise check pregame
     let info = pregame::load_match_info(session, entitlements, match_id, http).await;
-    log::debug!("Pregame endpoint returned: {:#?}", info);
+    debug!("Pregame endpoint returned: {:#?}", info);
     info
 }
 

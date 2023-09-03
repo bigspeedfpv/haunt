@@ -69,7 +69,7 @@ pub async fn get_player_history(
         }
     }
 
-    log::debug!("Loaded history for {puuid}: {:#?}", history);
+    debug!("Loaded history for {puuid}: {:#?}", history);
 
     Ok(history)
 }
