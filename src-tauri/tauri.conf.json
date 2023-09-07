@@ -1,7 +1,7 @@
 {
   "build": {
-    "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm build",
+    "beforeDevCommand": "pnpm dev",
     "devPath": "http://localhost:1420",
     "distDir": "../dist",
     "withGlobalTauri": false
@@ -10,14 +10,15 @@
     "productName": "haunt",
     "version": "0.0.0"
   },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "open": true
-      }
+  "plugins": {
+    "shell": {
+      "open": true
     },
+    "updater": {
+      "endpoints": []
+    }
+  },
+  "tauri": {
     "bundle": {
       "active": true,
       "icon": [
@@ -28,21 +29,24 @@
         "icons/icon.ico"
       ],
       "identifier": "com.tauri.dev",
-      "targets": "all"
+      "targets": "all",
+      "updater": {
+        "active": false
+      }
     },
     "security": {
       "csp": null
     },
-    "updater": {
-      "active": false
-    },
     "windows": [
       {
         "fullscreen": false,
+        "height": 600,
         "resizable": true,
         "title": "haunt",
         "width": 800,
-        "height": 600
+        "transparent": true,
+        "minWidth": 800,
+        "minHeight": 600
       }
     ]
   }

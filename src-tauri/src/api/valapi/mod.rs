@@ -2,6 +2,7 @@
 use std::{io::Write, path::PathBuf};
 
 use color_eyre::eyre::Result;
+use tauri::Manager;
 
 pub mod seasons;
 mod urls;
@@ -9,7 +10,7 @@ mod urls;
 #[tauri::command]
 pub async fn update_files(app_handle: tauri::AppHandle) -> Result<(), ()> {
     let data_dir = app_handle
-        .path_resolver()
+        .path()
         .app_local_data_dir()
         .unwrap()
         .join("ValAPI");

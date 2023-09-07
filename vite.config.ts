@@ -5,6 +5,12 @@ import vue from "@vitejs/plugin-vue";
 export default defineConfig(async () => ({
   plugins: [vue()],
 
+  resolve: {
+    alias: {
+      "@": "/src",
+    },
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   // prevent vite from obscuring rust errors
   clearScreen: false,

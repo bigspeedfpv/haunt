@@ -6,12 +6,15 @@ extern crate tracing;
 
 use color_eyre::eyre::Result;
 use futures::lock::Mutex;
+use tauri::Manager;
+use window_vibrancy::{apply_mica, apply_acrylic};
 use std::sync::Arc;
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 mod api;
 use api::commands;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct InnerState {
     http: reqwest::Client,
     offline_http: reqwest::Client, // used for local cnx with tls disabled
@@ -22,14 +25,18 @@ struct InnerState {
 }
 
 // so we don't have to manually wrap each field in an Arc<T>
+#[derive(Debug)]
 pub struct HauntState(Arc<InnerState>);
 
 fn main() -> Result<()> {
+    dotenvy::dotenv()?;
+
     color_eyre::install()?;
 
-    let format = tracing_subscriber::fmt::format()
-        .pretty();
-    tracing_subscriber::fmt().event_format(format).init();
+    tracing_subscriber::registry()
+        .with(fmt::layer().pretty())
+        .with(EnvFilter::from_default_env())
+        .init();
 
     let http = reqwest::Client::builder()
         .build()
@@ -41,6 +48,18 @@ fn main() -> Result<()> {
         .expect("failed to build reqwest client");
 
     tauri::Builder::default()
+        .setup(|app|{
+            let window = app.get_window("main").unwrap();
+
+            apply_mica(&window, None).expect("Failed to apply Mica effect!");
+
+            window.minimize().unwrap();
+            window.unminimize().unwrap();
+            window.maximize().unwrap();
+            window.unmaximize().unwrap();
+
+            Ok(())
+        })
         .manage(HauntState(Arc::new(InnerState {
             http,
             offline_http,

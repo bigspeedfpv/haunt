@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use color_eyre::{eyre::bail, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::api::valapi::seasons::Season;
 
@@ -21,7 +21,7 @@ pub struct QueueSkill {
     seasonal_info_by_season_id: Option<HashMap<String, SeasonalInfo>>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct SeasonalInfo {
     // the fact that ID is in all caps is so incredibly annoying

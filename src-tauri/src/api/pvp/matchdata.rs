@@ -7,14 +7,14 @@ use serde::{Deserialize, Serialize};
 mod ingame;
 mod pregame;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct MatchData {
     pub map: String,
     pub mode: String,
     pub players: Vec<Player>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Player {
     pub puuid: String,
     name: String,

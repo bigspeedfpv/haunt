@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use serde::Deserialize;
 
 use crate::api::lockfile;
@@ -171,8 +171,7 @@ pub async fn load_config(
     // so we find the one with the Valorant ID
     let valorant_config = sessions_response
         .values()
-        .find(|s| matches!(s.product_id, Product::Valorant))
-        .unwrap();
+        .find(|s| matches!(s.product_id, Product::Valorant)).ok_or_else(|| eyre!("Failed to find Valorant session"))?;
 
     let mut valorant_config = Config::from(valorant_config);
     valorant_config.version = version.data.riot_client_version;

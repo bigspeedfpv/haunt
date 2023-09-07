@@ -1,4 +1,5 @@
 use crate::api;
+use crate::api::pvp::matchdata::MatchData;
 
 #[derive(Debug, thiserror::Error)]
 pub enum LoginFail {
@@ -23,9 +24,18 @@ impl serde::Serialize for LoginFail {
     }
 }
 
+#[derive(Debug, serde::Serialize)]
+pub struct LoginInfo {
+    username: String,
+    tag: String,
+    #[serde(rename = "accountLevel")]
+    account_level: u32,
+    rank: String,
+}
+
 // Returns a Result. Err signifies the stage login failed at.
 #[tauri::command]
-pub async fn login(state: tauri::State<'_, crate::HauntState>) -> Result<(), LoginFail> {
+pub async fn login(state: tauri::State<'_, crate::HauntState>) -> Result<LoginInfo, LoginFail> {
     info!("Loading lockfile...");
 
     let lockfile_config = api::lockfile::load_config();
@@ -57,6 +67,7 @@ pub async fn login(state: tauri::State<'_, crate::HauntState>) -> Result<(), Log
         }
         Err(e) => {
             error!("Unable to load entitlements config: {e}");
+            warn!("This is probably not an issue with Haunt! Valorant is probably not running.");
             return Err(LoginFail::Entitlements);
         }
     };
@@ -76,6 +87,7 @@ pub async fn login(state: tauri::State<'_, crate::HauntState>) -> Result<(), Log
         }
         Err(why) => {
             error!("Unable to load session config: {why}");
+            warn!("It looks like Valorant isn't logged in.");
             return Err(LoginFail::Session);
         }
     };
@@ -83,24 +95,26 @@ pub async fn login(state: tauri::State<'_, crate::HauntState>) -> Result<(), Log
     info!("Getting player's username...");
     let presences =
         api::local::presence::get_presences(&lockfile_config, &state.0.offline_http).await;
-    if let Ok(presences) = presences {
-        let user = presences
-            .iter()
-            .find(|presence| presence.puuid == session_config.puuid)
-            .unwrap();
-        info!("Playing as {}", user.game_name);
-    } else {
-        return Err(LoginFail::Session);
+    match presences {
+        Ok(presences) => {
+            let user = presences
+                .iter()
+                .find(|presence| presence.puuid == session_config.puuid)
+                .unwrap();
+            info!("Playing as {}", user.game_name);
+            Ok(LoginInfo {
+                username: user.game_name.clone(),
+                tag: user.game_tag.clone(),
+                account_level: user.private.account_level,
+                rank: user.private.competitive_tier.to_string(),
+            })
+        }
+        Err(_) => Err(LoginFail::Session),
     }
-
-    Ok(())
 }
 
-#[derive(serde::Serialize)]
-pub struct Match {}
-
 #[tauri::command]
-pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Match, ()> {
+pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<MatchData, ()> {
     let lockfile_config = state.0.lockfile_config.lock().await;
     // rust memory is wild bruh &*??????
     let Some(lockfile_config) = &*lockfile_config else {
@@ -177,7 +191,7 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Ma
         &state.0.http,
     )
     .await;
-    let match_data = match match_data {
+    let mut match_data = match match_data {
         Ok(match_data) => match_data,
         Err(why) => {
             error!("Unable to load match players: {:#?}", why);
@@ -187,7 +201,7 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Ma
 
     debug!("Filling match history with acts: {:#?}", seasons);
 
-    for mut player in match_data.players {
+    for player in &mut match_data.players {
         info!("Filling history for player {}", player.puuid);
         let history = api::pvp::mmr::get_player_history(
             &player.puuid,
@@ -210,5 +224,5 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Ma
         player.competitive_history = history;
     }
 
-    Ok(Match {})
+    Ok(match_data)
 }
