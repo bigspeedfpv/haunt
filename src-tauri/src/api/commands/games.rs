@@ -155,9 +155,10 @@ pub struct ShortMatchData {
 pub struct ShortPlayer {
     pub name: String,
     pub team: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub character: Option<Agent>,
     pub title: String,
-    #[serde(rename = "accountLevel")]
+    #[serde(rename = "accountLevel", skip_serializing_if = "Option::is_none")]
     pub account_level: Option<u32>,
     #[serde(rename = "rankHistory")]
     pub rank_history: Vec<u32>,

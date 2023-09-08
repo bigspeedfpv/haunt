@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { invoke } from "@tauri-apps/api";
 import { useUserProfileStore } from "@/stores/userProfile";
 import { storeToRefs } from "pinia";
+import { MatchData } from "@/lib/types";
 
 const store = useUserProfileStore();
 
@@ -18,7 +19,7 @@ function checkMatchStatus() {
     return;
   }
 
-  invoke("load_match")
+  invoke<MatchData>("load_match")
     .then((res) => {
       console.log(res);
     })

@@ -46,7 +46,7 @@ impl Display for Team {
         let s = match self {
             Team::Blue => "blue",
             Team::Red => "red",
-            Team::Other(o) => o,
+            Team::Other(_) => "unknown",
         };
 
         write!(f, "{}", s)
