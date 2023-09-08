@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use color_eyre::Result;
 
 use crate::api::local::{entitlements, sessions};
@@ -7,14 +9,14 @@ use serde::{Deserialize, Serialize};
 mod ingame;
 mod pregame;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct MatchData {
     pub map: String,
     pub mode: String,
     pub players: Vec<Player>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct Player {
     pub puuid: String,
     name: String,
@@ -29,14 +31,26 @@ pub struct Player {
     pub competitive_history: super::mmr::History,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub enum Team {
     Blue,
     Red,
     Other(String),
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+impl Display for Team {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Team::Blue => "blue",
+            Team::Red => "red",
+            Team::Other(o) => o,
+        };
+
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(Debug, Deserialize)]
 pub enum Character {
     None,
     Hovered(String),
@@ -44,25 +58,25 @@ pub enum Character {
 }
 
 impl Player {
-    fn set_name(&mut self, name: String) {
+    pub fn set_name(&mut self, name: String) {
         self.name = name;
     }
 
-    fn get_name(&self) -> String {
+    pub fn get_name(&self) -> String {
         match self.incognito {
             true => "Player",
             false => &self.name,
         }.into()
     }
 
-    fn get_account_level(&self) -> u32{
+    pub fn get_account_level(&self) -> Option<u32> {
         match self.hide_account_level {
-            true => 0,
-            false => self.account_level,
+            true => None,
+            false => Some(self.account_level),
         }
     }
 
-    fn get_agent(&self) -> Option<String> {
+    pub fn get_agent(&self) -> Option<String> {
         match self.character {
             Character::None => None,
             Character::Hovered(ref agent) => Some(agent.clone()),

@@ -33,7 +33,7 @@ function refreshLogin() {
       router.replace({ path: "/pregame" });
     })
     .catch((e) => {
-      console.error(e);
+      console.error(`Got login failure ${LoginFailType[e]}`);
       loginFail.value = LoginFailType[e];
     });
 }

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::api::local::{entitlements, sessions};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct MatchInfo {
     #[serde(rename = "MapID")]
@@ -12,7 +12,7 @@ struct MatchInfo {
     teams: Vec<MatchTeam>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct MatchTeam {
     #[serde(rename = "TeamID")]
@@ -20,7 +20,7 @@ struct MatchTeam {
     players: Vec<MatchPlayer>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct MatchPlayer {
     #[serde(rename = "Subject")]

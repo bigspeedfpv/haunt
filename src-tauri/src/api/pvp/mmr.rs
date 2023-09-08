@@ -21,7 +21,7 @@ pub struct QueueSkill {
     seasonal_info_by_season_id: Option<HashMap<String, SeasonalInfo>>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct SeasonalInfo {
     // the fact that ID is in all caps is so incredibly annoying
