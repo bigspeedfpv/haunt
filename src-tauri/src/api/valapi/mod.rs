@@ -4,6 +4,7 @@ use std::{io::Write, path::PathBuf};
 use color_eyre::eyre::Result;
 use tauri::Manager;
 
+pub mod agents;
 pub mod seasons;
 mod urls;
 

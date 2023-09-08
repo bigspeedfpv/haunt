@@ -4,6 +4,7 @@
 #[macro_use]
 extern crate tracing;
 
+use std::collections::HashMap;
 use color_eyre::eyre::Result;
 use futures::lock::Mutex;
 use tauri::Manager;
@@ -18,6 +19,8 @@ use api::commands;
 struct InnerState {
     http: reqwest::Client,
     offline_http: reqwest::Client, // used for local cnx with tls disabled
+
+    agents: Vec<api::valapi::agents::Agent>,
 
     lockfile_config: Mutex<Option<api::lockfile::Config>>,
     entitlements_config: Mutex<Option<api::local::entitlements::Config>>,
@@ -51,7 +54,13 @@ fn main() -> Result<()> {
         .setup(|app|{
             let window = app.get_window("main").unwrap();
 
-            apply_mica(&window, None).expect("Failed to apply Mica effect!");
+            match apply_mica(&window, None) {
+                Ok(_) => info!("Mica effect successfully applied"),
+                Err(why) => {
+                    warn!("Failed to apply Mica, falling back to Acrylic: {why}");
+                    apply_acrylic(&window, None).expect("Failed to apply Mica and Acrylic.");
+                }
+            }
 
             window.minimize().unwrap();
             window.unminimize().unwrap();
@@ -63,6 +72,9 @@ fn main() -> Result<()> {
         .manage(HauntState(Arc::new(InnerState {
             http,
             offline_http,
+
+            agents: api::valapi::agents::load_agent_map(),
+
             ..Default::default()
         })))
         .invoke_handler(tauri::generate_handler![

@@ -3,6 +3,7 @@ use serde::Serialize;
 use crate::api::{
     self,
     pvp::matchdata::{MatchData, Player},
+    valapi::agents::Agent,
 };
 
 #[tauri::command]
@@ -91,6 +92,27 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Sh
         }
     };
 
+    let names = api::pvp::names::load_player_names(
+        &match_data.players,
+        &session_config,
+        &entitlements_config,
+        &state.0.http,
+    )
+    .await;
+    let Ok(names) = names else {
+        error!("Unable to load player names.");
+        return Err(());
+    };
+    for name in names {
+        let player = match_data
+            .players
+            .iter_mut()
+            .find(|p| p.puuid == name.0)
+            .unwrap(); // player exists because we got it from this Vec
+
+        player.set_name(name.1);
+    }
+
     debug!("Filling match history with acts: {:#?}", seasons);
 
     for player in &mut match_data.players {
@@ -116,7 +138,10 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Sh
         player.competitive_history = history;
     }
 
-    Ok(match_data.into())
+    // prefetched list of agents, mapped to uuid
+    let agents = &state.0.agents;
+
+    Ok(ShortMatchData::from_match_data(match_data, agents))
 }
 
 #[derive(Debug, Serialize)]
@@ -130,7 +155,7 @@ pub struct ShortMatchData {
 pub struct ShortPlayer {
     pub name: String,
     pub team: String,
-    pub character: Option<String>,
+    pub character: Option<Agent>,
     pub title: String,
     #[serde(rename = "accountLevel")]
     pub account_level: Option<u32>,
@@ -138,12 +163,12 @@ pub struct ShortPlayer {
     pub rank_history: Vec<u32>,
 }
 
-impl From<&Player> for ShortPlayer {
-    fn from(value: &Player) -> Self {
+impl ShortPlayer {
+    fn from_player(value: &Player, agents: &Vec<Agent>) -> Self {
         ShortPlayer {
-            name: value.get_name(),
+            name: value.get_name(agents),
             team: value.team.to_string(),
-            character: value.get_agent(),
+            character: value.get_agent(agents),
             title: value.title.clone(),
             account_level: value.get_account_level(),
             rank_history: value
@@ -155,15 +180,15 @@ impl From<&Player> for ShortPlayer {
     }
 }
 
-impl From<MatchData> for ShortMatchData {
-    fn from(value: MatchData) -> Self {
+impl ShortMatchData {
+    fn from_match_data(value: MatchData, agents: &Vec<Agent>) -> Self {
         ShortMatchData {
             map: value.map,
             mode: value.mode,
             players: value
                 .players
                 .iter()
-                .map(|p| ShortPlayer::from(p))
+                .map(|p| ShortPlayer::from_player(p, &agents))
                 .collect(),
         }
     }

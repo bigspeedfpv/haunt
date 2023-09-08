@@ -2,9 +2,12 @@ use std::fmt::Display;
 
 use color_eyre::Result;
 
-use crate::api::local::{entitlements, sessions};
+use crate::api::{
+    local::{entitlements, sessions},
+    valapi::agents::Agent,
+};
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 mod ingame;
 mod pregame;
@@ -58,17 +61,35 @@ pub enum Character {
 }
 
 impl Player {
+    /// Used to fill names from the Valorant Name API.
+    ///
+    /// * `name` - The name to fill.
     pub fn set_name(&mut self, name: String) {
         self.name = name;
     }
 
-    pub fn get_name(&self) -> String {
+    /// Returns the player's name, or an anonymized version if incognito.
+    pub fn get_name(&self, agents: &Vec<Agent>) -> String {
         match self.incognito {
-            true => "Player",
-            false => &self.name,
-        }.into()
+            true => self.get_incognito_name(agents),
+            false => self.name.clone(),
+        }
+        .into()
     }
 
+    fn get_incognito_name(&self, agents: &Vec<Agent>) -> String {
+        match &self.character {
+            Character::None => "Player".to_string(),
+            Character::Hovered(ref c) | Character::Locked(ref c) => {
+                match agent_from_uuid(agents, c) {
+                    Some(agent) => agent.display_name,
+                    None => "Player".to_string(),
+                }
+            }
+        }
+    }
+
+    /// Returns the player's account level, or None if hidden.
     pub fn get_account_level(&self) -> Option<u32> {
         match self.hide_account_level {
             true => None,
@@ -76,11 +97,16 @@ impl Player {
         }
     }
 
-    pub fn get_agent(&self) -> Option<String> {
+    /// Returns the player's agent, or None if not selected yet or agent unknown.
+    ///
+    /// * `agents` - The list of agents fetched from ValAPI.
+    pub fn get_agent(&self, agents: &Vec<Agent>) -> Option<Agent> {
+        trace!("Getting agent for {:?}", self.character);
         match self.character {
             Character::None => None,
-            Character::Hovered(ref agent) => Some(agent.clone()),
-            Character::Locked(ref agent) => Some(agent.clone()),
+            Character::Hovered(ref agent) | Character::Locked(ref agent) => {
+                agent_from_uuid(agents, agent)
+            }
         }
     }
 }
@@ -104,8 +130,7 @@ pub async fn get_match_info(
     info
 }
 
-fn get_name(
-    puuid: &str,
-) -> String {
-    "hi".into()
+fn agent_from_uuid(agents_map: &Vec<Agent>, uuid: &str) -> Option<Agent> {
+    trace!(uuid = uuid, agents = ?agents_map, "Finding agent");
+    agents_map.into_iter().find(|a| a.uuid == uuid).cloned()
 }

@@ -2,6 +2,7 @@ use super::local::{entitlements, sessions};
 
 pub mod matchdata;
 pub mod mmr;
+pub mod names;
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "PascalCase")]
