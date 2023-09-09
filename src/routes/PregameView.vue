@@ -4,13 +4,13 @@ import { invoke } from "@tauri-apps/api";
 import { useGameDataStore, useUserProfileStore } from "@/lib/stores";
 import { storeToRefs } from "pinia";
 import { MatchData } from "@/lib/types";
-import { routerKey, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 
 const store = useUserProfileStore();
 
 const { username, tagline } = storeToRefs(store);
 
-const refresh = ref(15);
+const refresh = ref(30);
 
 const gameStore = useGameDataStore();
 const router = useRouter();
@@ -29,10 +29,13 @@ function checkMatchStatus() {
       gameStore.gameData = res;
       router.replace({ path: "/ingame" });
     })
-    .catch(() => {
-      // if no match found we check again in 5 secs
-      refresh.value = 15;
-      setTimeout(checkMatchStatus, 1000);
+    .catch((loggedIn: boolean) => {
+      if (!loggedIn) {
+        router.replace({ path: "/" });
+      } else {
+        refresh.value = 30;
+        setTimeout(checkMatchStatus, 1000);
+      }
     });
 }
 

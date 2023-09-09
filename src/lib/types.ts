@@ -1,8 +1,9 @@
 export type MatchData = {
+  ingame: boolean;
   map: string;
   mode: string;
   players: Player[];
-}
+};
 
 export type Player = {
   uuid: string;
@@ -12,17 +13,17 @@ export type Player = {
   title: string;
   accountLevel?: number;
   rankHistory: CompetitiveTier[];
-}
+};
 
 export type Agent = {
   uuid: string;
   displayName: string;
   displayIcon: string;
-}
+};
 
 export type CompetitiveTier = {
   episode: string;
   tier: number;
   tierName?: string;
   largeIcon?: string;
-}
+};

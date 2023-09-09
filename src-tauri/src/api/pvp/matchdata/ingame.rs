@@ -51,6 +51,7 @@ impl Into<super::MatchData> for MatchInfo {
             .collect();
 
         super::MatchData {
+            ingame: true,
             map: self.map_id,
             mode: self.mode,
             players,

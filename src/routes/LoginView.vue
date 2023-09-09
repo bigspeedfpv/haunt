@@ -47,10 +47,16 @@ refreshLogin();
       Welcome to
       <span class="text-purple-400 font-bold">Haunt.</span>
     </h1>
-    <span class="mt-3 text-2xl font-semibold opacity-80">Waiting for Valorant...</span>
-    <span class="mt-1 font-light opacity-50">(Login failed: {{ loginFail }} not found)</span>
-    <button @click="refreshLogin"
-      class="mt-2 py-2 px-4 rounded-md bg-black/10 backdrop-saturate-150 shadow-lg shadow-black/20">
+    <span class="mt-3 text-2xl font-semibold opacity-80"
+      >Waiting for Valorant...</span
+    >
+    <span class="mt-1 font-light opacity-50"
+      >(Login failed: {{ loginFail }} not found)</span
+    >
+    <button
+      @click="refreshLogin"
+      class="mt-2 py-2 px-4 rounded-md bg-black/10 backdrop-saturate-150 shadow-lg shadow-black/20"
+    >
       Refresh
     </button>
   </div>

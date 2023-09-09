@@ -14,6 +14,7 @@ mod pregame;
 
 #[derive(Debug)]
 pub struct MatchData {
+    pub ingame: bool,
     pub map: String,
     pub mode: String,
     pub players: Vec<Player>,

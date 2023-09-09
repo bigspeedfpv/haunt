@@ -7,25 +7,43 @@ use crate::api::{
 };
 
 #[tauri::command]
-pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<ShortMatchData, ()> {
+pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<ShortMatchData, bool> {
     let lockfile_config = state.0.lockfile_config.lock().await;
     // rust memory is wild bruh &*??????
     let Some(lockfile_config) = &*lockfile_config else {
         error!("No lockfile config set. Was load_match called before login?");
-        return Err(());
+        return Err(false);
     };
 
     let entitlements_config = state.0.entitlements_config.lock().await;
     let Some(entitlements_config) = &*entitlements_config else {
         error!("No entitlements config set. Was load_match called before login?");
-        return Err(());
+        return Err(false);
     };
 
     let session_config = state.0.session_config.lock().await;
     let Some(session_config) = &*session_config else {
         error!("No session config set. Was load_match called before login?");
-        return Err(());
+        return Err(false);
     };
+
+    info!("Ensuring correct user still logged in...");
+    let players =
+        api::local::presence::get_presences(&lockfile_config, &state.0.offline_http).await;
+
+    match &players {
+        Ok(players) => {
+            let user = players
+                .iter()
+                .find(|presence| presence.puuid == session_config.puuid);
+
+            if user.is_none() {
+                error!("User is not logged in. They probably switched accounts since login was last called.");
+                return Err(false);
+            }
+        }
+        Err(_) => return Err(false),
+    }
 
     info!("Checking if player is in a match...");
 
@@ -40,19 +58,16 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Sh
         }
         None => {
             info!("Player is not in a match.");
-            return Err(());
+            return Err(true);
         }
     };
 
     info!("Loading player presences...");
-
-    let players =
-        api::local::presence::get_presences(&lockfile_config, &state.0.offline_http).await;
     let players = match players {
         Ok(players) => players,
         Err(why) => {
             error!("Unable to load player presences: {why}");
-            return Err(());
+            return Err(true);
         }
     };
 
@@ -68,7 +83,7 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Sh
         Ok(seasons) => &seasons[..=3],
         Err(why) => {
             error!("Unable to load seasons: {:#?}", why);
-            return Err(());
+            return Err(true);
         }
     };
 
@@ -88,7 +103,7 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Sh
         Ok(match_data) => match_data,
         Err(why) => {
             error!("Unable to load match players: {:#?}", why);
-            return Err(());
+            return Err(true);
         }
     };
 
@@ -101,7 +116,7 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Sh
     .await;
     let Ok(names) = names else {
         error!("Unable to load player names.");
-        return Err(());
+        return Err(true);
     };
     for name in names {
         let player = match_data
@@ -142,11 +157,14 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Sh
     let agents = &state.0.agents;
     let tiers = &state.0.competitive_tiers;
 
-    Ok(ShortMatchData::from_match_data(match_data, agents, tiers))
+    let short_match = ShortMatchData::from_match_data(match_data, agents, tiers);
+
+    Ok(short_match)
 }
 
 #[derive(Debug, Serialize)]
 pub struct ShortMatchData {
+    pub ingame: bool,
     pub map: String,
     pub mode: String,
     pub players: Vec<ShortPlayer>,
@@ -185,8 +203,13 @@ impl ShortPlayer {
 }
 
 impl ShortMatchData {
-    fn from_match_data(value: MatchData, agents: &Vec<Agent>, tiers: &Vec<CompetitiveTier>) -> Self {
+    fn from_match_data(
+        value: MatchData,
+        agents: &Vec<Agent>,
+        tiers: &Vec<CompetitiveTier>,
+    ) -> Self {
         ShortMatchData {
+            ingame: value.ingame,
             map: value.map,
             mode: value.mode,
             players: value
