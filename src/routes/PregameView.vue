@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api";
-import { useUserProfileStore } from "@/stores/userProfile";
+import { useGameDataStore, useUserProfileStore } from "@/lib/stores";
 import { storeToRefs } from "pinia";
 import { MatchData } from "@/lib/types";
+import { routerKey, useRouter } from "vue-router";
 
 const store = useUserProfileStore();
 
 const { username, tagline } = storeToRefs(store);
 
 const refresh = ref(15);
+
+const gameStore = useGameDataStore();
+const router = useRouter();
 
 // updates every second, but only refreshes data every `refresh` seconds
 function checkMatchStatus() {
@@ -22,6 +26,8 @@ function checkMatchStatus() {
   invoke<MatchData>("load_match")
     .then((res) => {
       console.log(res);
+      gameStore.gameData = res;
+      router.replace({ path: "/ingame" });
     })
     .catch(() => {
       // if no match found we check again in 5 secs
@@ -49,3 +55,4 @@ checkMatchStatus();
     >
   </div>
 </template>
+@/userProfile@/lib/stores

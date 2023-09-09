@@ -21,6 +21,7 @@ struct InnerState {
     offline_http: reqwest::Client, // used for local cnx with tls disabled
 
     agents: Vec<api::valapi::agents::Agent>,
+    competitive_tiers: Vec<api::valapi::seasons::CompetitiveTier>,
 
     lockfile_config: Mutex<Option<api::lockfile::Config>>,
     entitlements_config: Mutex<Option<api::local::entitlements::Config>>,
@@ -74,6 +75,7 @@ fn main() -> Result<()> {
             offline_http,
 
             agents: api::valapi::agents::load_agent_map(),
+            competitive_tiers: api::valapi::seasons::load_competitive_tiers(),
 
             ..Default::default()
         })))

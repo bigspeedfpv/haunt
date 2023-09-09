@@ -5,16 +5,24 @@ export type MatchData = {
 }
 
 export type Player = {
+  uuid: string;
   name: string;
   team: "blue" | "red" | "unknown";
-  character: Agent | undefined;
+  character?: Agent;
   title: string;
-  accountLevel: number | undefined;
-  rankHistory: number[];
+  accountLevel?: number;
+  rankHistory: CompetitiveTier[];
 }
 
 export type Agent = {
   uuid: string;
   displayName: string;
   displayIcon: string;
+}
+
+export type CompetitiveTier = {
+  episode: string;
+  tier: number;
+  tierName?: string;
+  largeIcon?: string;
 }

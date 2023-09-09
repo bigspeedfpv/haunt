@@ -5,12 +5,14 @@ import { createMemoryHistory, createRouter } from "vue-router";
 import App from "@/App.vue";
 import LoginView from "@/routes/LoginView.vue";
 import PregameView from "@/routes/PregameView.vue";
+import IngameView from "@/routes/IngameView.vue";
 
 import "@/styles.css";
 
 const routes = [
   { path: "/", component: LoginView },
   { path: "/pregame", component: PregameView },
+  { path: "/ingame", component: IngameView },
 ];
 
 const router = createRouter({

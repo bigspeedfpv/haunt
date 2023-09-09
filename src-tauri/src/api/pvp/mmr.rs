@@ -11,21 +11,29 @@ const CLIENT_PLATFORM: &'static str = "ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwb
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct PlayerMMRResponse {
+struct PlayerMMRResponse {
     queue_skills: HashMap<String, QueueSkill>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct QueueSkill {
+struct QueueSkill {
     #[serde(rename = "SeasonalInfoBySeasonID")]
-    seasonal_info_by_season_id: Option<HashMap<String, SeasonalInfo>>,
+    seasonal_info_by_season_id: Option<HashMap<String, SeasonalInfoResponse>>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct SeasonalInfo {
+struct SeasonalInfoResponse {
     // the fact that ID is in all caps is so incredibly annoying
     #[serde(rename = "SeasonID")]
+    pub season_id: String,
+    pub competitive_tier: u32,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SeasonalInfo {
+    pub episode_id: String,
     pub season_id: String,
     pub competitive_tier: u32,
 }
@@ -62,10 +70,13 @@ pub async fn get_player_history(
     };
 
     let mut history = History::new();
-    let act_ids = acts.iter().map(|act| &act.season_uuid).collect::<Vec<_>>();
-    for act in act_ids {
-        if let Some(act_info) = competitive.remove(act) {
-            history.push(act_info);
+    for act in acts {
+        if let Some(act_info) = competitive.remove(&act.season_uuid) {
+            history.push(SeasonalInfo {
+                episode_id: act.competitive_tiers_uuid.clone(),
+                season_id: act_info.season_id,
+                competitive_tier: act_info.competitive_tier,
+            });
         }
     }
 

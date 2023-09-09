@@ -3,7 +3,7 @@ use serde::Serialize;
 use crate::api::{
     self,
     pvp::matchdata::{MatchData, Player},
-    valapi::agents::Agent,
+    valapi::{agents::Agent, seasons::CompetitiveTier},
 };
 
 #[tauri::command]
@@ -140,8 +140,9 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Sh
 
     // prefetched list of agents, mapped to uuid
     let agents = &state.0.agents;
+    let tiers = &state.0.competitive_tiers;
 
-    Ok(ShortMatchData::from_match_data(match_data, agents))
+    Ok(ShortMatchData::from_match_data(match_data, agents, tiers))
 }
 
 #[derive(Debug, Serialize)]
@@ -153,6 +154,7 @@ pub struct ShortMatchData {
 
 #[derive(Debug, Serialize)]
 pub struct ShortPlayer {
+    pub uuid: String,
     pub name: String,
     pub team: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -161,12 +163,13 @@ pub struct ShortPlayer {
     #[serde(rename = "accountLevel", skip_serializing_if = "Option::is_none")]
     pub account_level: Option<u32>,
     #[serde(rename = "rankHistory")]
-    pub rank_history: Vec<u32>,
+    pub rank_history: Vec<CompetitiveTier>,
 }
 
 impl ShortPlayer {
-    fn from_player(value: &Player, agents: &Vec<Agent>) -> Self {
+    fn from_player(value: &Player, agents: &Vec<Agent>, tiers: &Vec<CompetitiveTier>) -> Self {
         ShortPlayer {
+            uuid: value.puuid.clone(),
             name: value.get_name(agents),
             team: value.team.to_string(),
             character: value.get_agent(agents),
@@ -175,21 +178,21 @@ impl ShortPlayer {
             rank_history: value
                 .competitive_history
                 .iter()
-                .map(|a| a.competitive_tier)
+                .map(|a| CompetitiveTier::from_act_tier(tiers, &a.episode_id, a.competitive_tier))
                 .collect(),
         }
     }
 }
 
 impl ShortMatchData {
-    fn from_match_data(value: MatchData, agents: &Vec<Agent>) -> Self {
+    fn from_match_data(value: MatchData, agents: &Vec<Agent>, tiers: &Vec<CompetitiveTier>) -> Self {
         ShortMatchData {
             map: value.map,
             mode: value.mode,
             players: value
                 .players
                 .iter()
-                .map(|p| ShortPlayer::from_player(p, &agents))
+                .map(|p| ShortPlayer::from_player(p, agents, tiers))
                 .collect(),
         }
     }

@@ -98,8 +98,13 @@ pub async fn login(state: tauri::State<'_, crate::HauntState>) -> Result<LoginIn
         Ok(presences) => {
             let user = presences
                 .iter()
-                .find(|presence| presence.puuid == session_config.puuid)
-                .unwrap();
+                .find(|presence| presence.puuid == session_config.puuid);
+
+            let Some(user) = user else {
+                error!("Unable to find user in presences. User is probably not logged in.");
+                return Err(LoginFail::Session);
+            };
+
             info!("Playing as {}", user.game_name);
             Ok(LoginInfo {
                 username: user.game_name.clone(),

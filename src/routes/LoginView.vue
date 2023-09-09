@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/tauri";
 
-import { useUserProfileStore } from "@/stores/userProfile";
+import { useUserProfileStore } from "@/lib/stores";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 
@@ -55,3 +55,4 @@ refreshLogin();
     </button>
   </div>
 </template>
+@/userProfile@/lib/stores
