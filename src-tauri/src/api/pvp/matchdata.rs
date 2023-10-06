@@ -33,6 +33,7 @@ pub struct Player {
     incognito: bool,
     hide_account_level: bool,
     pub competitive_history: super::mmr::History,
+    pub party_id: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -116,19 +117,35 @@ pub async fn get_match_info(
     session: &sessions::Config,
     entitlements: &entitlements::Config,
     match_id: &str,
+    presences: &Vec<crate::api::local::presence::Player>,
     http: &reqwest::Client,
 ) -> Result<MatchData> {
     // check ingame first
-    let info = ingame::load_match_info(session, entitlements, match_id, http).await;
+    let mut info = ingame::load_match_info(session, entitlements, match_id, http).await;
     debug!("Ingame endpoint returned: {:#?}", info);
-    if info.is_ok() {
-        return info;
+
+    if info.is_err() {
+        // otherwise check pregame
+        info = pregame::load_match_info(session, entitlements, match_id, http).await;
+        debug!("Pregame endpoint returned: {:#?}", info);
     }
 
-    // otherwise check pregame
-    let info = pregame::load_match_info(session, entitlements, match_id, http).await;
-    debug!("Pregame endpoint returned: {:#?}", info);
-    info
+    let Ok(mut info) = info else {
+        return info; // bail if no match data
+    };
+
+    // map player party ids
+    for player in &mut info.players {
+        let presence = presences.iter().find(|p| p.puuid == player.puuid);
+        let Some(presence) = presence else {
+            warn!("Player {} not found in presences", player.puuid);
+            continue;
+        };
+
+        player.party_id = presence.private.party_id.clone();
+    }
+
+    Ok(info)
 }
 
 fn agent_from_uuid(agents_map: &Vec<Agent>, uuid: &str) -> Option<Agent> {

@@ -15,10 +15,11 @@ pub struct Agent {
 
 #[tauri::command]
 pub fn load_agent_map() -> Vec<Agent> {
-    let agents = reqwest::blocking::get("https://valorant-api.com/v1/agents?isPlayableCharacter=true")
-        .expect("ValAPI Agents request failed")
-        .json::<AgentsResponse>()
-        .expect("Parse ValAPI Agents failed");
+    let agents =
+        reqwest::blocking::get("https://valorant-api.com/v1/agents?isPlayableCharacter=true")
+            .expect("ValAPI Agents request failed")
+            .json::<AgentsResponse>()
+            .expect("Parse ValAPI Agents failed");
 
     debug!(agents = ?agents.data, "Successfully loaded agents.");
 

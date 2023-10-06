@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::local::presence::Player;
 
-pub fn debug_parties(players: Vec<Player>) {
+pub fn debug_parties(players: &Vec<Player>) {
     let mut parties = HashMap::new();
 
     for player in players {

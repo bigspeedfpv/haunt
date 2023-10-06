@@ -13,6 +13,7 @@ export type Player = {
   title: string;
   accountLevel?: number;
   rankHistory: CompetitiveTier[];
+  partyId: string;
 };
 
 export type Agent = {
@@ -25,5 +26,5 @@ export type CompetitiveTier = {
   episode: string;
   tier: number;
   tierName?: string;
-  largeIcon?: string;
+  icon?: string;
 };

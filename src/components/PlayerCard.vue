@@ -4,6 +4,7 @@ import { computed } from "vue";
 
 const props = defineProps<{
   player: Player;
+  partyColor?: string;
 }>();
 
 // split name into display name and tag
@@ -17,19 +18,47 @@ const nameColor = computed(() =>
 
 <template>
   <div
-    class="p-4 rounded-lg shadow-lg bg-black/5 flex flex-row items-center gap-4"
+    class="overflow-clip rounded-lg shadow-lg bg-black/20 flex flex-row items-center"
   >
+    <!-- party bar!!!! -->
+    <div
+      class="w-6 h-full flex justify-center items-center"
+      :class="partyColor ?? 'bg-black/60'"
+    >
+      <h2 class="vertical-text font-bold">
+        {{ player.character?.displayName.toUpperCase() ?? "UNDECIDED" }}
+      </h2>
+    </div>
+
     <img
-      :src="player.rankHistory[0]?.largeIcon ?? '/images/unranked.png'"
-      alt="rank"
-      class="w-16 h-16"
+      :src="player.character?.displayIcon"
+      :alt="player.character?.displayName ?? 'Undecided'"
+      :title="player.character?.displayName ?? 'Undecided'"
+      class="h-full"
     />
 
-    <div class="flex flex-col">
-      <h1 :class="nameColor">
-        <span class="font-bold text-xl">{{ name }}</span>
-        <span v-if="tag" class="font-light">{{ tag }}</span>
-      </h1>
+    <!-- content -->
+    <div class="flex justify-center items-center gap-2 p-4">
+      <img
+        :src="player.rankHistory[0]?.icon ?? '/images/unranked.png'"
+        :alt="player.rankHistory[0]?.tierName ?? 'unranked'"
+        :title="player.rankHistory[0]?.tierName ?? 'unranked'"
+        class="h-12 w-12"
+      />
+
+      <div class="flex flex-col">
+        <h1 :class="nameColor">
+          <span class="font-bold text-xl">{{ name }}</span>
+          <span v-if="tag" class="font-light">{{ tag }}</span>
+        </h1>
+      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.vertical-text {
+  writing-mode: vertical-lr;
+  transform: rotate(-180deg);
+}
+</style>

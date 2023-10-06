@@ -1,4 +1,4 @@
-use color_eyre::{Result, eyre::bail};
+use color_eyre::{eyre::bail, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::api::local::{entitlements, sessions};
@@ -28,7 +28,6 @@ struct MatchPlayer {
     character_selection_state: CharacterSelectionState,
     #[serde(rename = "CharacterID")]
     character_id: String,
-    competitive_tier: u32,
     player_identity: PlayerIdentity,
     is_captain: bool,
 }
@@ -78,6 +77,7 @@ impl Into<super::MatchData> for MatchInfo {
                         incognito: p.player_identity.incognito,
                         hide_account_level: p.player_identity.hide_account_level,
                         competitive_history: Vec::new(),
+                        party_id: "".to_string(),
                     })
             })
             .flatten()
@@ -121,10 +121,12 @@ pub async fn load_match_info(
         .await?;
 
     if !info.status().is_success() {
-        bail!("Pregame match check failed with status code {}.", info.status());
+        bail!(
+            "Pregame match check failed with status code {}.",
+            info.status()
+        );
     }
 
     let info: MatchInfo = info.json().await?;
     Ok(info.into())
 }
-

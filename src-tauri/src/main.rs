@@ -4,16 +4,15 @@
 #[macro_use]
 extern crate tracing;
 
-use std::collections::HashMap;
 use color_eyre::eyre::Result;
 use futures::lock::Mutex;
-use tauri::Manager;
-use window_vibrancy::{apply_mica, apply_acrylic};
 use std::sync::Arc;
+use tauri::Manager;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use window_vibrancy::{apply_acrylic, apply_mica};
 
 mod api;
-use api::commands;
+use api::commands::{self, ShortMatchData};
 
 #[derive(Debug, Default)]
 struct InnerState {
@@ -26,6 +25,8 @@ struct InnerState {
     lockfile_config: Mutex<Option<api::lockfile::Config>>,
     entitlements_config: Mutex<Option<api::local::entitlements::Config>>,
     session_config: Mutex<Option<api::local::sessions::Config>>,
+
+    match_cache: Mutex<Option<ShortMatchData>>,
 }
 
 // so we don't have to manually wrap each field in an Arc<T>
@@ -33,7 +34,8 @@ struct InnerState {
 pub struct HauntState(Arc<InnerState>);
 
 fn main() -> Result<()> {
-    dotenvy::dotenv()?;
+    // it do not matter if its not there gg
+    _ = dotenvy::dotenv();
 
     color_eyre::install()?;
 
@@ -52,7 +54,7 @@ fn main() -> Result<()> {
         .expect("failed to build reqwest client");
 
     tauri::Builder::default()
-        .setup(|app|{
+        .setup(|app| {
             let window = app.get_window("main").unwrap();
 
             match apply_mica(&window, None) {
@@ -81,7 +83,8 @@ fn main() -> Result<()> {
         })))
         .invoke_handler(tauri::generate_handler![
             commands::login,
-            commands::load_match
+            commands::load_match,
+            commands::quick_update_match,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

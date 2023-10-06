@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const REFRESH_INTERVAL = 15;
+
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api";
 import { useGameDataStore, useUserProfileStore } from "@/lib/stores";
@@ -10,16 +12,19 @@ const store = useUserProfileStore();
 
 const { username, tagline } = storeToRefs(store);
 
-const refresh = ref(30);
+const refresh = ref(REFRESH_INTERVAL);
 
 const gameStore = useGameDataStore();
 const router = useRouter();
+
+let timeout: NodeJS.Timeout;
 
 // updates every second, but only refreshes data every `refresh` seconds
 function checkMatchStatus() {
   if (refresh.value > 0) {
     refresh.value--;
-    setTimeout(checkMatchStatus, 1000);
+    clearTimeout(timeout);
+    timeout = setTimeout(checkMatchStatus, 1000);
     return;
   }
 
@@ -33,8 +38,9 @@ function checkMatchStatus() {
       if (!loggedIn) {
         router.replace({ path: "/" });
       } else {
-        refresh.value = 30;
-        setTimeout(checkMatchStatus, 1000);
+        refresh.value = REFRESH_INTERVAL;
+        clearTimeout(timeout);
+        timeout = setTimeout(checkMatchStatus, 1000);
       }
     });
 }
@@ -58,4 +64,3 @@ checkMatchStatus();
     >
   </div>
 </template>
-@/userProfile@/lib/stores

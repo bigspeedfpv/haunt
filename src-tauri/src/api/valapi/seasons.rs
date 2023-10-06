@@ -76,7 +76,7 @@ struct CompetitiveTierResponseTier {
     /// rank index
     tier: u32,
     tier_name: String,
-    large_icon: Option<String>,
+    small_icon: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -88,7 +88,7 @@ pub struct CompetitiveTier {
     pub tier: u32,
     pub tier_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub large_icon: Option<String>,
+    pub icon: Option<String>,
 }
 
 impl Into<Vec<CompetitiveTier>> for CompetitiveTierResponse {
@@ -100,7 +100,7 @@ impl Into<Vec<CompetitiveTier>> for CompetitiveTierResponse {
                     episode: episode.uuid.clone(),
                     tier: tier.tier,
                     tier_name: tier.tier_name,
-                    large_icon: tier.large_icon,
+                    icon: tier.small_icon,
                 })
             })
             .collect()
@@ -113,14 +113,14 @@ impl Default for CompetitiveTier {
             episode: String::new(),
             tier: 0,
             tier_name: String::from("UNRANKED"),
-            large_icon: None,
+            icon: None,
         }
     }
 }
 
 impl CompetitiveTier {
     /// Get the competitive tier for a given act and tier index
-    /// 
+    ///
     /// * `tiers` - list of competitive tiers
     /// * `episode` - episode uuid
     /// * `tier` - rank index

@@ -53,7 +53,10 @@ pub async fn load_player_names(
     debug!("Name service response: {:#?}", res);
 
     res.iter().for_each(|p| {
-        names.insert(p.subject.clone(), format!("{} #{}", p.game_name.clone(), p.tag_line.clone()));
+        names.insert(
+            p.subject.clone(),
+            format!("{} #{}", p.game_name.clone(), p.tag_line.clone()),
+        );
     });
 
     Ok(names)

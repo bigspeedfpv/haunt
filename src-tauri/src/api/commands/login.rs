@@ -27,6 +27,7 @@ impl serde::Serialize for LoginFail {
 pub struct LoginInfo {
     username: String,
     tag: String,
+    uuid: String,
     #[serde(rename = "accountLevel")]
     account_level: u32,
     rank: String,
@@ -109,6 +110,7 @@ pub async fn login(state: tauri::State<'_, crate::HauntState>) -> Result<LoginIn
             Ok(LoginInfo {
                 username: user.game_name.clone(),
                 tag: user.game_tag.clone(),
+                uuid: user.puuid.clone(),
                 account_level: user.private.account_level,
                 rank: user.private.competitive_tier.to_string(),
             })

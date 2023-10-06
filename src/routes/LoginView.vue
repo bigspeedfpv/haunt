@@ -9,7 +9,7 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 const store = useUserProfileStore();
 
-const { username, tagline } = storeToRefs(store);
+const { username, tagline, uuid } = storeToRefs(store);
 const loginFail = ref("");
 
 enum LoginFailType {
@@ -21,6 +21,7 @@ enum LoginFailType {
 type UserInfo = {
   username: string;
   tag: string;
+  uuid: string;
 };
 
 function refreshLogin() {
@@ -29,6 +30,7 @@ function refreshLogin() {
       console.log(res);
       username.value = res.username;
       tagline.value = res.tag;
+      uuid.value = res.uuid;
 
       router.replace({ path: "/pregame" });
     })
@@ -55,10 +57,9 @@ refreshLogin();
     >
     <button
       @click="refreshLogin"
-      class="mt-2 py-2 px-4 rounded-md bg-black/10 backdrop-saturate-150 shadow-lg shadow-black/20"
+      class="mt-2 py-2 px-4 rounded-md bg-black/20 backdrop-saturate-150 shadow-lg shadow-black/20"
     >
       Refresh
     </button>
   </div>
 </template>
-@/userProfile@/lib/stores

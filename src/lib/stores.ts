@@ -5,8 +5,9 @@ import { MatchData } from "./types";
 export const useUserProfileStore = defineStore("userProfile", () => {
   const username = ref("pluh playa");
   const tagline = ref("boulets");
+  const uuid = ref("1234");
 
-  return { username, tagline };
+  return { username, tagline, uuid };
 });
 
 export const useGameDataStore = defineStore("gameData", () => {

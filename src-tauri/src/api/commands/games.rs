@@ -2,12 +2,15 @@ use serde::Serialize;
 
 use crate::api::{
     self,
+    local::{entitlements, sessions, presence},
+    lockfile,
     pvp::matchdata::{MatchData, Player},
     valapi::{agents::Agent, seasons::CompetitiveTier},
 };
 
-#[tauri::command]
-pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<ShortMatchData, bool> {
+async fn load_configs(
+    state: &tauri::State<'_, crate::HauntState>,
+) -> Result<(lockfile::Config, entitlements::Config, sessions::Config), bool> {
     let lockfile_config = state.0.lockfile_config.lock().await;
     // rust memory is wild bruh &*??????
     let Some(lockfile_config) = &*lockfile_config else {
@@ -27,22 +30,37 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Sh
         return Err(false);
     };
 
+    Ok((
+        lockfile_config.clone(),
+        entitlements_config.clone(),
+        session_config.clone(),
+    ))
+}
+
+async fn refresh_login(
+    state: &tauri::State<'_, crate::HauntState>,
+    lockfile_config: &lockfile::Config,
+    entitlements_config: &entitlements::Config,
+    session_config: &sessions::Config,
+) -> Result<(String, Vec<presence::Player>), bool> {
     info!("Ensuring correct user still logged in...");
     let players =
         api::local::presence::get_presences(&lockfile_config, &state.0.offline_http).await;
 
-    match &players {
-        Ok(players) => {
-            let user = players
-                .iter()
-                .find(|presence| presence.puuid == session_config.puuid);
+    let Ok(players) = players else {
+        error!("Unable to load player presences.");
+        return Err(false);
+    };
 
-            if user.is_none() {
-                error!("User is not logged in. They probably switched accounts since login was last called.");
-                return Err(false);
-            }
-        }
-        Err(_) => return Err(false),
+    let user = players
+        .iter()
+        .find(|presence| presence.puuid == session_config.puuid);
+
+    if user.is_none() {
+        error!(
+            "User is not logged in. They probably switched accounts since login was last called."
+        );
+        return Err(false);
     }
 
     info!("Checking if player is in a match...");
@@ -62,20 +80,28 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Sh
         }
     };
 
-    info!("Loading player presences...");
-    let players = match players {
-        Ok(players) => players,
-        Err(why) => {
-            error!("Unable to load player presences: {why}");
-            return Err(true);
-        }
-    };
+    Ok((match_id, players))
+}
+
+#[tauri::command]
+pub async fn load_match(
+    state: tauri::State<'_, crate::HauntState>,
+) -> Result<ShortMatchData, bool> {
+    let (lockfile_config, entitlements_config, session_config) = load_configs(&state).await?;
+
+    let (match_id, players) = refresh_login(
+        &state,
+        &lockfile_config,
+        &entitlements_config,
+        &session_config,
+    )
+    .await?;
 
     let match_info = api::local::presence::get_match_info(&session_config.puuid, &players).await;
     debug!("Match info: {:#?}", match_info);
 
     info!("Loading player info.");
-    api::player::debug_parties(players);
+    api::player::debug_parties(&players);
 
     let seasons = api::valapi::seasons::get_prev_3_seasons(&state).await;
     let seasons = match &seasons {
@@ -96,6 +122,7 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Sh
         &session_config,
         &entitlements_config,
         &match_id,
+        &players,
         &state.0.http,
     )
     .await;
@@ -159,10 +186,68 @@ pub async fn load_match(state: tauri::State<'_, crate::HauntState>) -> Result<Sh
 
     let short_match = ShortMatchData::from_match_data(match_data, agents, tiers);
 
+    let mut match_cache = state.0.match_cache.lock().await;
+    *match_cache = Some(short_match.clone());
+
     Ok(short_match)
 }
 
-#[derive(Debug, Serialize)]
+#[tauri::command]
+pub async fn quick_update_match(
+    state: tauri::State<'_, crate::HauntState>,
+) -> Result<ShortMatchData, bool> {
+    let (lockfile_config, entitlements_config, session_config) = load_configs(&state).await?;
+
+    let (match_id, players) = refresh_login(
+        &state,
+        &lockfile_config,
+        &entitlements_config,
+        &session_config,
+    ).await?;
+
+    let match_cache = &state.0.match_cache;
+    let mut match_cache = match_cache.lock().await;
+
+    // if we don't have a match cache, or it's from a stale match, throw the user back to pregame 
+    // &mut *match_cache is actually just fucked up beyond human comprehension
+    let match_cache = match &mut *match_cache {
+        Some(match_cache) => match_cache,
+        None => {
+            info!("Invalid match cache. Returning to pregame.");
+            return Err(true);
+        }
+    };
+
+    let match_info = api::local::presence::get_match_info(&session_config.puuid, &players).await;
+    debug!("Match info: {:#?}", match_info);
+
+    let match_data = api::pvp::matchdata::get_match_info(
+        &session_config,
+        &entitlements_config,
+        &match_id,
+        &players,
+        &state.0.http,
+    )
+    .await;
+    let match_data = match match_data {
+        Ok(match_data) => match_data,
+        Err(why) => {
+            error!("Unable to load match players: {:#?}", why);
+            return Err(true);
+        }
+    };
+    
+    // player names won't change here. we're just refetching agent status, that's it
+
+    // prefetched list of agents, mapped to uuid
+    let agents = &state.0.agents;
+
+    match_cache.update_with_match_data(match_data, agents);
+
+    Ok(match_cache.clone())
+}
+
+#[derive(Clone, Debug, Serialize)]
 pub struct ShortMatchData {
     pub ingame: bool,
     pub map: String,
@@ -170,7 +255,7 @@ pub struct ShortMatchData {
     pub players: Vec<ShortPlayer>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ShortPlayer {
     pub uuid: String,
     pub name: String,
@@ -182,10 +267,13 @@ pub struct ShortPlayer {
     pub account_level: Option<u32>,
     #[serde(rename = "rankHistory")]
     pub rank_history: Vec<CompetitiveTier>,
+    #[serde(rename = "partyId")]
+    pub party_id: String,
 }
 
 impl ShortPlayer {
     fn from_player(value: &Player, agents: &Vec<Agent>, tiers: &Vec<CompetitiveTier>) -> Self {
+        println!("{:#?}", value);
         ShortPlayer {
             uuid: value.puuid.clone(),
             name: value.get_name(agents),
@@ -198,6 +286,7 @@ impl ShortPlayer {
                 .iter()
                 .map(|a| CompetitiveTier::from_act_tier(tiers, &a.episode_id, a.competitive_tier))
                 .collect(),
+            party_id: value.party_id.clone(),
         }
     }
 }
@@ -217,6 +306,24 @@ impl ShortMatchData {
                 .iter()
                 .map(|p| ShortPlayer::from_player(p, agents, tiers))
                 .collect(),
+        }
+    }
+
+    fn update_with_match_data(
+        &mut self,
+        value: MatchData,
+        agents: &Vec<Agent>,
+    ) {
+        self.ingame = value.ingame;
+        
+        for player in &mut self.players {
+            let updated_player = value.players.iter().find(|p| p.puuid == player.uuid);
+            let Some(updated_player) = updated_player else {
+                continue;
+            };
+
+            player.character = updated_player.get_agent(agents);
+            player.party_id = updated_player.party_id.clone();
         }
     }
 }

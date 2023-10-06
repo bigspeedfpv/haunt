@@ -1,4 +1,4 @@
-use color_eyre::{Result, eyre::bail};
+use color_eyre::{eyre::bail, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::api::local::{entitlements, sessions};
@@ -74,6 +74,7 @@ impl Into<super::Player> for MatchPlayer {
             incognito: self.player_identity.incognito,
             hide_account_level: self.player_identity.hide_account_level,
             competitive_history: Vec::new(),
+            party_id: "".to_string(),
         }
     }
 }
@@ -99,7 +100,10 @@ pub async fn load_match_info(
         .await?;
 
     if !info.status().is_success() {
-        bail!("Ingame match check failed with status code {}.", info.status());
+        bail!(
+            "Ingame match check failed with status code {}.",
+            info.status()
+        );
     }
 
     let info: MatchInfo = info.json().await?;
